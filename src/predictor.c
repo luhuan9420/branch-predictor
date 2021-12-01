@@ -11,9 +11,13 @@
 //
 // TODO:Student Information
 //
-const char *studentName = "NAME";
-const char *studentID   = "PID";
-const char *email       = "EMAIL";
+const char *studentName1 = "Huan Ho";
+const char *studentID1   = "A59012210";
+const char *email1       = "h4ho@ucsd.edu";
+
+const char *studentName2 = "NAME";
+const char *studentID2   = "PID";
+const char *email2       = "EMAIL";
 
 //------------------------------------//
 //      Predictor Configuration       //
@@ -47,9 +51,34 @@ int verbose;
 void
 init_predictor()
 {
-  //
-  //TODO: Initialize Branch Predictor Data Structures
-  //
+  switch (bpType) {
+    case STATIC:
+      break;
+    case GSHARE:
+      init_GSHARE();
+      break;
+    case TOURNAMENT:
+      init_TOURNAMENT();
+      break;
+    case CUSTOM:
+      init_CUSTOM();
+      break;
+    default:
+      break;
+  }
+}
+
+// Helper method for initializing 3 types of predictors
+void init_GSHARE(){
+
+}
+
+void init_TOURNAMENT(){
+
+}
+
+void init_CUSTOM(){
+
 }
 
 // Make a prediction for conditional branch instruction at PC 'pc'
@@ -68,14 +97,30 @@ make_prediction(uint32_t pc)
     case STATIC:
       return TAKEN;
     case GSHARE:
+      return pred_GSHARE(pc);
     case TOURNAMENT:
+      return pred_TOURNAMENT(pc);
     case CUSTOM:
+      return pred_CUSTOM(pc);
     default:
       break;
   }
 
   // If there is not a compatable bpType then return NOTTAKEN
   return NOTTAKEN;
+}
+
+// Helper methods to make prediction for each of the 3 types of predictors
+uint8_t pred_GSHARE(uint32_t pc){
+
+}
+
+uint8_t pred_TOURNAMENT(uint32_t pc){
+  
+}
+
+uint8_t pred_CUSTOM(uint32_t pc){
+  
 }
 
 // Train the predictor the last executed branch at PC 'pc' and with
@@ -85,7 +130,32 @@ make_prediction(uint32_t pc)
 void
 train_predictor(uint32_t pc, uint8_t outcome)
 {
-  //
-  //TODO: Implement Predictor training
-  //
+  switch (bpType) {
+    case STATIC:
+      break;
+    case GSHARE:
+      train_GSHARE(pc, outcome);
+      break;
+    case TOURNAMENT:
+      train_TOURNAMENT(pc, outcome);
+      break;
+    case CUSTOM:
+      train_CUSTOM(pc, outcome);
+      break;
+    default:
+      break;
+  }
+}
+
+// Helper methods to train predictor for each of the 3 types of predictors
+void train_GSHARE(uint32_t pc, uint8_t outcome){
+
+}
+
+void train_TOURNAMENT(uint32_t pc, uint8_t outcome){
+  
+}
+
+void train_CUSTOM(uint32_t pc, uint8_t outcome){
+  
 }
