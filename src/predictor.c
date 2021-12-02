@@ -40,6 +40,9 @@ int verbose;
 //
 //TODO: Add your own Branch Predictor data structures here
 //
+int global_hist;
+uint8_t *gshare_BHT;
+int gmask;
 
 
 //------------------------------------//
@@ -70,7 +73,13 @@ init_predictor()
 
 // Helper method for initializing 3 types of predictors
 void init_GSHARE(){
-
+  gmask = (1 << ghistoryBits) -1;
+  global_hist = 0;
+  int size = (1 << ghistoryBits);
+  gshare_BHT = malloc(size * sizeof(uint8_t));
+  for(int i = 0; i < size; i++){
+    gshare_BHT[i] = WN; // weak not taken (n)
+  }
 }
 
 void init_TOURNAMENT(){
@@ -112,7 +121,14 @@ make_prediction(uint32_t pc)
 
 // Helper methods to make prediction for each of the 3 types of predictors
 uint8_t pred_GSHARE(uint32_t pc){
-
+  //int mask = (1 << ghistoryBits) -1;
+  uint32_t index = (pc^global_hist) & gmask;
+  if(gshare_BHT[index] <= 1){
+    return NOTTAKEN;
+  }
+  else{
+    return TAKEN;
+  }
 }
 
 uint8_t pred_TOURNAMENT(uint32_t pc){
@@ -149,7 +165,9 @@ train_predictor(uint32_t pc, uint8_t outcome)
 
 // Helper methods to train predictor for each of the 3 types of predictors
 void train_GSHARE(uint32_t pc, uint8_t outcome){
-
+  uint32_t index = (pc ^ global_hist) & gmask;
+  updateBHT(gshare_BHT, index, outcome); 
+  global_hist = (global_hist << 1) | outcome;
 }
 
 void train_TOURNAMENT(uint32_t pc, uint8_t outcome){
@@ -158,4 +176,13 @@ void train_TOURNAMENT(uint32_t pc, uint8_t outcome){
 
 void train_CUSTOM(uint32_t pc, uint8_t outcome){
   
+}
+
+void updateBHT(uint8_t *BHT, uint32_t index, uint8_t outcome){
+  if(outcome == NOTTAKEN && BHT[index] != SN){
+    BHT[index]--;
+  }
+  else if (outcome == TAKEN && BHT[index] != ST){
+    BHT[index]++;
+  }
 }
