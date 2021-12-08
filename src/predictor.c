@@ -40,17 +40,16 @@ int verbose;
 //
 //TODO: Add your own Branch Predictor data structures here
 //
-int ghist;
+int global_hist;
 int gmask;
 int lmask;
 int pcmask;
 
-uint8_t *gshare_BHT;
 uint8_t *global_BHT;
-uint8_t *global_PHT;
+// uint8_t *global_PHT;
 uint8_t *local_BHT;
 uint8_t *local_PHT;
-uint8_t *choice;
+uint8_t *chooser;
 
 
 //------------------------------------//
@@ -82,16 +81,16 @@ init_predictor()
 // Helper method for initializing 3 types of predictors
 void init_GSHARE(){
   gmask = (1 << ghistoryBits) -1;
-  ghist = 0;
+  global_hist = 0;
   int size = (1 << ghistoryBits);
-  gshare_BHT = malloc(size * sizeof(uint8_t));
+  global_BHT = malloc(size * sizeof(uint8_t));
   for(int i = 0; i < size; i++){
-    gshare_BHT[i] = WN; // weak not taken (n)
+    global_BHT[i] = WN; // weak not taken (n)
   }
 }
 
 void init_TOURNAMENT(){
-  ghist = 0;
+  global_hist = 0;
 
   gmask = (1 << ghistoryBits) -1;
   lmask = (1 << lhistoryBits) - 1;
@@ -104,7 +103,7 @@ void init_TOURNAMENT(){
   local_PHT = malloc(lpsize * sizeof(uint8_t)); 
 
   int csize = (1 << ghistoryBits);
-  choice = malloc(csize * sizeof(uint8_t));
+  chooser = malloc(csize * sizeof(uint8_t));
   global_BHT = malloc(csize * sizeof(uint8_t));
 
   for(int i = 0; i < lbsize; i++){
@@ -114,7 +113,7 @@ void init_TOURNAMENT(){
     local_PHT[i] = 0;
   }
   for(int i = 0; i < csize; i++){
-    choice[i] = WT;
+    chooser[i] = WT;
     global_BHT[i] = WN;
   }
 }
@@ -155,8 +154,8 @@ make_prediction(uint32_t pc)
 // Helper methods to make prediction for each of the 3 types of predictors
 uint8_t pred_GSHARE(uint32_t pc){
   //int mask = (1 << ghistoryBits) -1;
-  uint32_t index = (pc^ghist) & gmask;
-  if(gshare_BHT[index] <= 1){
+  uint32_t index = (pc^global_hist) & gmask;
+  if(global_BHT[index] <= 1){
     return NOTTAKEN;
   }
   else{
@@ -165,10 +164,10 @@ uint8_t pred_GSHARE(uint32_t pc){
 }
 
 uint8_t pred_TOURNAMENT(uint32_t pc){
-  uint32_t g_BHT_index = ghist & gmask;
-  uint32_t choice_val = choice[g_BHT_index];
+  uint32_t g_BHT_index = global_hist & gmask;
+  uint32_t choose_val = chooser[g_BHT_index];
   uint32_t prediction;
-  if(choice_val <= 1){
+  if(choose_val <= 1){
     uint32_t pc_index = pcmask & pc;
     uint32_t l_BHT_index = lmask & local_PHT[pc_index];
     prediction = local_BHT[l_BHT_index];
@@ -214,24 +213,66 @@ train_predictor(uint32_t pc, uint8_t outcome)
 
 // Helper methods to train predictor for each of the 3 types of predictors
 void train_GSHARE(uint32_t pc, uint8_t outcome){
-  uint32_t index = (pc ^ ghist) & gmask;
-  updatePred(gshare_BHT, index, outcome); 
-  ghist = (ghist << 1) | outcome;
+  uint32_t index = (pc ^ global_hist) & gmask;
+  if(outcome == NOTTAKEN && global_BHT[index] != SN){
+    global_BHT[index]--;
+  }
+  else if (outcome == TAKEN && global_BHT[index] != ST){
+    global_BHT[index]++;
+  }
+  global_hist = (global_hist << 1) | outcome;
 }
 
 void train_TOURNAMENT(uint32_t pc, uint8_t outcome){
+  uint32_t local_PHT_index = pc & pcmask;
+  uint32_t local_BHT_index = local_PHT[local_PHT_index];
+
+  int pred_local = local_BHT[local_BHT_index];
+  int pred_global = global_BHT[global_hist];
+  int choose_val = chooser[global_hist];
+
+  if(outcome == NOTTAKEN){
+    if ((pred_local <= 1 && pred_global >= 2) || (pred_local >= 2 && pred_global <= 1)){
+      if(pred_local <= 1 && choose_val > 0)
+        chooser[global_hist]--;
+      else if(pred_global <= 1 && choose_val < 3)
+        chooser[global_hist]++;
+    }
+    if(pred_local >= 1)
+      local_BHT[local_BHT_index]--;
+    if(pred_global >= 1)
+      global_BHT[global_hist]--;
+
+    local_PHT[local_PHT_index]  = ((local_PHT[local_PHT_index] << 1) & (lmask)) | outcome;
+    global_hist = ((global_hist << 1) & gmask) | outcome;
+  }
+  else{
+    if ((pred_local <= 1 && pred_global >= 2) || (pred_local >= 2 && pred_global <= 1)){
+      if(pred_local >= 2 && choose_val > 0)
+        chooser[global_hist]--;
+      else if(pred_global >= 2 && choose_val < 3)
+        chooser[global_hist]++;
+    }
+
+    if(pred_local >= 1)
+      local_BHT[local_BHT_index]++;
+    if(pred_global >= 1)
+      global_BHT[global_hist]++;
   
+    local_PHT[local_PHT_index]  = (((local_PHT[local_PHT_index] << 1)+1) & (lmask)) | outcome;
+    global_hist = (((global_hist << 1) + 1) & gmask) | outcome;
+  }
 }
 
 void train_CUSTOM(uint32_t pc, uint8_t outcome){
   
 }
 
-void updatePred(uint8_t *BHT, uint32_t index, uint8_t outcome){
-  if(outcome == NOTTAKEN && BHT[index] != SN){
-    BHT[index]--;
-  }
-  else if (outcome == TAKEN && BHT[index] != ST){
-    BHT[index]++;
-  }
-}
+// void updatePred(uint8_t *BHT, uint32_t index, uint8_t outcome){
+//   if(outcome == NOTTAKEN && BHT[index] != SN){
+//     BHT[index]--;
+//   }
+//   else if (outcome == TAKEN && BHT[index] != ST){
+//     BHT[index]++;
+//   }
+// }
