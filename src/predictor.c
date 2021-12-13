@@ -56,28 +56,6 @@ uint8_t *chooser;
 //        Predictor Functions         //
 //------------------------------------//
 
-// Initialize the predictor
-//
-void
-init_predictor()
-{
-  switch (bpType) {
-    case STATIC:
-      break;
-    case GSHARE:
-      init_GSHARE();
-      break;
-    case TOURNAMENT:
-      init_TOURNAMENT();
-      break;
-    case CUSTOM:
-      //init_CUSTOM();
-      break;
-    default:
-      break;
-  }
-}
-
 // Helper method for initializing 3 types of predictors
 void 
 init_GSHARE(){
@@ -125,33 +103,26 @@ init_CUSTOM(){
 
 }
 
-// Make a prediction for conditional branch instruction at PC 'pc'
-// Returning TAKEN indicates a prediction of taken; returning NOTTAKEN
-// indicates a prediction of not taken
+// Initialize the predictor
 //
-uint8_t
-make_prediction(uint32_t pc)
+void
+init_predictor()
 {
-  //
-  //TODO: Implement prediction scheme
-  //
-
-  // Make a prediction based on the bpType
   switch (bpType) {
     case STATIC:
-      return TAKEN;
+      break;
     case GSHARE:
-      return pred_GSHARE(pc);
+      init_GSHARE();
+      break;
     case TOURNAMENT:
-      return pred_TOURNAMENT(pc);
+      init_TOURNAMENT();
+      break;
     case CUSTOM:
-      //return pred_CUSTOM(pc);
+      //init_CUSTOM();
+      break;
     default:
       break;
   }
-
-  // If there is not a compatable bpType then return NOTTAKEN
-  return NOTTAKEN;
 }
 
 // Helper methods to make prediction for each of the 3 types of predictors
@@ -193,28 +164,33 @@ pred_TOURNAMENT(uint32_t pc){
   
 // }
 
-// Train the predictor the last executed branch at PC 'pc' and with
-// outcome 'outcome' (true indicates that the branch was taken, false
-// indicates that the branch was not taken)
+// Make a prediction for conditional branch instruction at PC 'pc'
+// Returning TAKEN indicates a prediction of taken; returning NOTTAKEN
+// indicates a prediction of not taken
 //
-void
-train_predictor(uint32_t pc, uint8_t outcome)
+uint8_t
+make_prediction(uint32_t pc)
 {
+  //
+  //TODO: Implement prediction scheme
+  //
+
+  // Make a prediction based on the bpType
   switch (bpType) {
     case STATIC:
-      break;
+      return TAKEN;
     case GSHARE:
-      train_GSHARE(pc, outcome);
-      break;
+      return pred_GSHARE(pc);
     case TOURNAMENT:
-      train_TOURNAMENT(pc, outcome);
-      break;
+      return pred_TOURNAMENT(pc);
     case CUSTOM:
-      //train_CUSTOM(pc, outcome);
-      break;
+      //return pred_CUSTOM(pc);
     default:
       break;
   }
+
+  // If there is not a compatable bpType then return NOTTAKEN
+  return NOTTAKEN;
 }
 
 // Helper methods to train predictor for each of the 3 types of predictors
@@ -272,10 +248,34 @@ train_TOURNAMENT(uint32_t pc, uint8_t outcome){
   }
 }
 
-// void 
-// train_CUSTOM(uint32_t pc, uint8_t outcome){
+void 
+train_CUSTOM(uint32_t pc, uint8_t outcome){
   
-// }
+}
+
+// Train the predictor the last executed branch at PC 'pc' and with
+// outcome 'outcome' (true indicates that the branch was taken, false
+// indicates that the branch was not taken)
+//
+void
+train_predictor(uint32_t pc, uint8_t outcome)
+{
+  switch (bpType) {
+    case STATIC:
+      break;
+    case GSHARE:
+      train_GSHARE(pc, outcome);
+      break;
+    case TOURNAMENT:
+      train_TOURNAMENT(pc, outcome);
+      break;
+    case CUSTOM:
+      //train_CUSTOM(pc, outcome);
+      break;
+    default:
+      break;
+  }
+}
 
 // void updatePred(uint8_t *BHT, uint32_t index, uint8_t outcome){
 //   if(outcome == NOTTAKEN && BHT[index] != SN){
