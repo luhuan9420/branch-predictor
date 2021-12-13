@@ -46,7 +46,7 @@ int lmask;
 int pcmask;
 
 uint8_t *global_BHT;
-// uint8_t *global_PHT;
+uint8_t *global_PHT;
 uint8_t *local_BHT;
 uint8_t *local_PHT;
 uint8_t *chooser;
@@ -100,8 +100,37 @@ init_TOURNAMENT(){
 
 void 
 init_CUSTOM(){
+  global_hist = 0;
+  ghistoryBits = 13;
+  lhistoryBits = 11;
+  pcIndexBits = 11;
 
+  gmask = (1 << ghistoryBits) -1;
+  lmask = (1 << lhistoryBits) - 1;
+  pcmask = (1 << pcIndexBits) - 1;
+
+  int lbsize = (1 << lhistoryBits);
+  local_BHT = malloc(lbsize * sizeof(uint8_t));
+
+  int lpsize = (1 << pcIndexBits);
+  local_PHT = malloc(lpsize * sizeof(uint8_t)); 
+
+  int csize = (1 << ghistoryBits);
+  chooser = malloc(csize * sizeof(uint8_t));
+  global_BHT = malloc(csize * sizeof(uint8_t));
+
+  for(int i = 0; i < lbsize; i++){
+    local_BHT[i] = WN;
+  }
+  for(int i = 0; i < lpsize; i++){
+    local_PHT[i] = 0;
+  }
+  for(int i = 0; i < csize; i++){
+    chooser[i] = WT;
+    global_BHT[i] = WN;
+  }
 }
+
 
 // Initialize the predictor
 //
@@ -118,7 +147,7 @@ init_predictor()
       init_TOURNAMENT();
       break;
     case CUSTOM:
-      //init_CUSTOM();
+      init_CUSTOM();
       break;
     default:
       break;
@@ -159,10 +188,27 @@ pred_TOURNAMENT(uint32_t pc){
   }  
 }
 
-// uint8_t 
-// pred_CUSTOM(uint32_t pc){
+uint8_t 
+pred_CUSTOM(uint32_t pc){
+  uint32_t g_BHT_index = (global_hist & gmask) ^ (pc & gmask);
+  uint32_t choose_val = chooser[g_BHT_index];
+  uint32_t prediction;
+  if(choose_val <= 1){
+    uint32_t pc_index = pcmask & pc;
+    uint32_t l_BHT_index = lmask & local_PHT[pc_index];
+    prediction = local_BHT[l_BHT_index];
+  } 
+  else{
+    prediction = global_BHT[g_BHT_index];
+  }
+  if(prediction <= 1){
+    return NOTTAKEN;
+  }
+  else{
+    return TAKEN;
+  }  
+}
   
-// }
 
 // Make a prediction for conditional branch instruction at PC 'pc'
 // Returning TAKEN indicates a prediction of taken; returning NOTTAKEN
@@ -184,7 +230,7 @@ make_prediction(uint32_t pc)
     case TOURNAMENT:
       return pred_TOURNAMENT(pc);
     case CUSTOM:
-      //return pred_CUSTOM(pc);
+      return pred_CUSTOM(pc);
     default:
       break;
   }
@@ -238,9 +284,9 @@ train_TOURNAMENT(uint32_t pc, uint8_t outcome){
         chooser[global_hist]++;
     }
 
-    if(pred_local >= 1)
+    if(pred_local <= 2)
       local_BHT[local_BHT_index]++;
-    if(pred_global >= 1)
+    if(pred_global <= 2)
       global_BHT[global_hist]++;
   
     local_PHT[local_PHT_index]  = (((local_PHT[local_PHT_index] << 1)+1) & (lmask)) | outcome;
@@ -250,8 +296,49 @@ train_TOURNAMENT(uint32_t pc, uint8_t outcome){
 
 void 
 train_CUSTOM(uint32_t pc, uint8_t outcome){
+  uint32_t local_PHT_index = pc & pcmask;
+  uint32_t local_BHT_index = local_PHT[local_PHT_index];
+  uint32_t g_BHT_index = (global_hist & gmask) ^ (pc & gmask);
+
+
+
+  int pred_local = local_BHT[local_BHT_index];
+  int pred_global = global_BHT[g_BHT_index];
+  int choose_val = chooser[g_BHT_index];
+
+  if(outcome == NOTTAKEN){
+    if ((pred_local <= 1 && pred_global >= 2) || (pred_local >= 2 && pred_global <= 1)){
+      if(pred_local <= 1 && choose_val > 0)
+        chooser[g_BHT_index]--;
+      else if(pred_global <= 1 && choose_val < 3)
+        chooser[g_BHT_index]++;
+    }
+    if(pred_local >= 1)
+      local_BHT[local_BHT_index]--;
+    if(pred_global >= 1)
+      global_BHT[g_BHT_index]--;
+
+    local_PHT[local_PHT_index]  = ((local_PHT[local_PHT_index] << 1) & (lmask)) | outcome;
+    global_hist = ((global_hist << 1) & gmask) | outcome;
+  }
+  else{
+    if ((pred_local <= 1 && pred_global >= 2) || (pred_local >= 2 && pred_global <= 1)){
+      if(pred_local >= 2 && choose_val > 0)
+        chooser[g_BHT_index]--;
+      else if(pred_global >= 2 && choose_val < 3)
+        chooser[g_BHT_index]++;
+    }
+
+    if(pred_local <= 2)
+      local_BHT[local_BHT_index]++;
+    if(pred_global <= 2)
+      global_BHT[g_BHT_index]++;
   
+    local_PHT[local_PHT_index]  = (((local_PHT[local_PHT_index] << 1)+1) & (lmask)) | outcome;
+    global_hist = (((global_hist << 1) + 1) & gmask) | outcome;
+  }
 }
+
 
 // Train the predictor the last executed branch at PC 'pc' and with
 // outcome 'outcome' (true indicates that the branch was taken, false
@@ -270,7 +357,7 @@ train_predictor(uint32_t pc, uint8_t outcome)
       train_TOURNAMENT(pc, outcome);
       break;
     case CUSTOM:
-      //train_CUSTOM(pc, outcome);
+      train_CUSTOM(pc, outcome);
       break;
     default:
       break;
