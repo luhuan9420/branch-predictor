@@ -79,7 +79,8 @@ init_predictor()
 }
 
 // Helper method for initializing 3 types of predictors
-void init_GSHARE(){
+void 
+init_GSHARE(){
   gmask = (1 << ghistoryBits) -1;
   global_hist = 0;
   int size = (1 << ghistoryBits);
@@ -89,7 +90,8 @@ void init_GSHARE(){
   }
 }
 
-void init_TOURNAMENT(){
+void 
+init_TOURNAMENT(){
   global_hist = 0;
 
   gmask = (1 << ghistoryBits) -1;
@@ -118,7 +120,8 @@ void init_TOURNAMENT(){
   }
 }
 
-void init_CUSTOM(){
+void 
+init_CUSTOM(){
 
 }
 
@@ -152,7 +155,8 @@ make_prediction(uint32_t pc)
 }
 
 // Helper methods to make prediction for each of the 3 types of predictors
-uint8_t pred_GSHARE(uint32_t pc){
+uint8_t 
+pred_GSHARE(uint32_t pc){
   //int mask = (1 << ghistoryBits) -1;
   uint32_t index = (pc^global_hist) & gmask;
   if(global_BHT[index] <= 1){
@@ -163,7 +167,8 @@ uint8_t pred_GSHARE(uint32_t pc){
   }
 }
 
-uint8_t pred_TOURNAMENT(uint32_t pc){
+uint8_t 
+pred_TOURNAMENT(uint32_t pc){
   uint32_t g_BHT_index = global_hist & gmask;
   uint32_t choose_val = chooser[g_BHT_index];
   uint32_t prediction;
@@ -183,7 +188,8 @@ uint8_t pred_TOURNAMENT(uint32_t pc){
   }  
 }
 
-uint8_t pred_CUSTOM(uint32_t pc){
+uint8_t 
+pred_CUSTOM(uint32_t pc){
   
 }
 
@@ -212,7 +218,8 @@ train_predictor(uint32_t pc, uint8_t outcome)
 }
 
 // Helper methods to train predictor for each of the 3 types of predictors
-void train_GSHARE(uint32_t pc, uint8_t outcome){
+void 
+train_GSHARE(uint32_t pc, uint8_t outcome){
   uint32_t index = (pc ^ global_hist) & gmask;
   if(outcome == NOTTAKEN && global_BHT[index] != SN){
     global_BHT[index]--;
@@ -223,7 +230,8 @@ void train_GSHARE(uint32_t pc, uint8_t outcome){
   global_hist = (global_hist << 1) | outcome;
 }
 
-void train_TOURNAMENT(uint32_t pc, uint8_t outcome){
+void 
+train_TOURNAMENT(uint32_t pc, uint8_t outcome){
   uint32_t local_PHT_index = pc & pcmask;
   uint32_t local_BHT_index = local_PHT[local_PHT_index];
 
@@ -264,7 +272,8 @@ void train_TOURNAMENT(uint32_t pc, uint8_t outcome){
   }
 }
 
-void train_CUSTOM(uint32_t pc, uint8_t outcome){
+void 
+train_CUSTOM(uint32_t pc, uint8_t outcome){
   
 }
 
