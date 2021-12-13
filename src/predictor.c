@@ -71,7 +71,7 @@ init_predictor()
       init_TOURNAMENT();
       break;
     case CUSTOM:
-      init_CUSTOM();
+      //init_CUSTOM();
       break;
     default:
       break;
@@ -145,7 +145,7 @@ make_prediction(uint32_t pc)
     case TOURNAMENT:
       return pred_TOURNAMENT(pc);
     case CUSTOM:
-      return pred_CUSTOM(pc);
+      //return pred_CUSTOM(pc);
     default:
       break;
   }
@@ -188,10 +188,10 @@ pred_TOURNAMENT(uint32_t pc){
   }  
 }
 
-uint8_t 
-pred_CUSTOM(uint32_t pc){
+// uint8_t 
+// pred_CUSTOM(uint32_t pc){
   
-}
+// }
 
 // Train the predictor the last executed branch at PC 'pc' and with
 // outcome 'outcome' (true indicates that the branch was taken, false
@@ -210,7 +210,7 @@ train_predictor(uint32_t pc, uint8_t outcome)
       train_TOURNAMENT(pc, outcome);
       break;
     case CUSTOM:
-      train_CUSTOM(pc, outcome);
+      //train_CUSTOM(pc, outcome);
       break;
     default:
       break;
@@ -272,10 +272,10 @@ train_TOURNAMENT(uint32_t pc, uint8_t outcome){
   }
 }
 
-void 
-train_CUSTOM(uint32_t pc, uint8_t outcome){
+// void 
+// train_CUSTOM(uint32_t pc, uint8_t outcome){
   
-}
+// }
 
 // void updatePred(uint8_t *BHT, uint32_t index, uint8_t outcome){
 //   if(outcome == NOTTAKEN && BHT[index] != SN){
